@@ -17,9 +17,134 @@
 package cmd
 
 import (
+	"errors"
+	"fmt"
 	"os"
+	"strings"
+
+	"github.com/containers/toolbox/pkg/podman"
+	"github.com/containers/toolbox/pkg/utils"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
+)
+
+var (
+	rootCmd = &cobra.Command{
+		Use:               "toolbox",
+		Short:             "Unprivileged development environment",
+		PersistentPreRunE: preRun,
+	}
+
+	rootFlags struct {
+		assumeYes bool
+		logLevel  string
+		logPodman bool
+		verbose   bool
+	}
 )
 
 func Execute() {
+	if err := rootCmd.Execute(); err != nil {
+		os.Exit(1)
+	}
+
 	os.Exit(0)
+}
+
+func init() {
+	persistentFlags := rootCmd.PersistentFlags()
+
+	persistentFlags.BoolVarP(&rootFlags.assumeYes,
+		"assumeyes",
+		"y",
+		false,
+		"Automatically answer yes for all questions.")
+
+	persistentFlags.StringVar(&rootFlags.logLevel,
+		"log-level",
+		"error",
+		"Log messages at the specified level: trace, debug, info, warn, error, fatal or panic.")
+
+	persistentFlags.BoolVar(&rootFlags.logPodman,
+		"log-podman",
+		false,
+		"Show the log output of Podman. The log level is handled by the log-level option.")
+
+	persistentFlags.BoolVarP(&rootFlags.verbose, "verbose", "v", false, "Set log-level to 'debug'.")
+
+	rootCmd.SetHelpFunc(rootHelp)
+	rootCmd.SetUsageFunc(rootUsage)
+}
+
+func preRun(cmd *cobra.Command, args []string) error {
+	cmd.Root().SilenceUsage = true
+
+	if err := setUpLoggers(); err != nil {
+		return err
+	}
+
+	podman.SetLogLevel(rootFlags.logLevel)
+	return nil
+}
+
+func rootHelp(cmd *cobra.Command, args []string) {
+	if len(args) == 0 {
+		fmt.Fprintf(os.Stderr, "Error: missing command\n")
+		fmt.Fprintf(os.Stderr, "\n")
+		fmt.Fprintf(os.Stderr, "create    Create a new toolbox container\n")
+		fmt.Fprintf(os.Stderr, "enter     Enter an existing toolbox container\n")
+		fmt.Fprintf(os.Stderr, "list      List all existing toolbox containers and images\n")
+		fmt.Fprintf(os.Stderr, "\n")
+		fmt.Fprintf(os.Stderr, "Run 'toolbox --help' for usage.\n")
+	} else {
+		for _, arg := range args {
+			if !strings.HasPrefix(arg, "-") {
+				break
+			}
+
+			if arg == "--help" || arg == "-h" {
+				if utils.IsInsideContainer() {
+					if !utils.IsInsideToolboxContainer() {
+						fmt.Fprintf(os.Stderr, "Error: this is not a toolbox container\n")
+						return
+					}
+
+					if _, err := utils.ForwardToHost(); err != nil {
+						fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+						return
+					}
+				} else {
+					if err := utils.ShowManual("toolbox"); err != nil {
+						fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+						return
+					}
+				}
+			}
+		}
+	}
+}
+
+func rootUsage(cmd *cobra.Command) error {
+	err := errors.New("Run 'toolbox --help' for usage.")
+	fmt.Fprintf(os.Stderr, "%s", err)
+	return err
+}
+
+func setUpLoggers() error {
+	logrus.SetOutput(os.Stderr)
+	logrus.SetFormatter(&logrus.TextFormatter{
+		DisableTimestamp: true,
+	})
+
+	if rootFlags.verbose {
+		rootFlags.logLevel = "debug"
+	}
+
+	logLevel, err := logrus.ParseLevel(rootFlags.logLevel)
+	if err != nil {
+		return errors.New("failed to parse log-level")
+	}
+
+	logrus.SetLevel(logLevel)
+	return nil
 }
