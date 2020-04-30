@@ -24,6 +24,47 @@ import (
 	"github.com/acobaugh/osrelease"
 )
 
+var (
+	preservedEnvironmentVariables = []string{
+		"COLORTERM",
+		"DBUS_SESSION_BUS_ADDRESS",
+		"DBUS_SYSTEM_BUS_ADDRESS",
+		"DESKTOP_SESSION",
+		"DISPLAY",
+		"LANG",
+		"SHELL",
+		"SSH_AUTH_SOCK",
+		"TERM",
+		"TOOLBOX_PATH",
+		"VTE_VERSION",
+		"WAYLAND_DISPLAY",
+		"XDG_CURRENT_DESKTOP",
+		"XDG_DATA_DIRS",
+		"XDG_MENU_PREFIX",
+		"XDG_RUNTIME_DIR",
+		"XDG_SEAT",
+		"XDG_SESSION_DESKTOP",
+		"XDG_SESSION_ID",
+		"XDG_SESSION_TYPE",
+		"XDG_VTNR",
+	}
+)
+
+func GetEnvOptionsForPreservedVariables() []string {
+	var envOptions []string
+
+	for _, variable := range preservedEnvironmentVariables {
+		value, found := os.LookupEnv(variable)
+		if !found {
+			continue
+		}
+
+		envOptions = append(envOptions, fmt.Sprintf("--env=%s=%s", variable, value))
+	}
+
+	return envOptions
+}
+
 // GetHostID returns the ID from the os-release files
 //
 // Examples:
