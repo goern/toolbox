@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/user"
 	"syscall"
 
 	"github.com/acobaugh/osrelease"
@@ -127,6 +128,21 @@ func GetEnvOptionsForPreservedVariables() []string {
 	}
 
 	return envOptions
+}
+
+// GetGroupForSudo returns the name of the sudoers group.
+//
+// Some distros call it 'sudo' (eg. Ubuntu) and some call it 'wheel' (eg. Fedora).
+func GetGroupForSudo() (string, error) {
+	groups := []string{"sudo", "wheel"}
+
+	for _, group := range groups {
+		if _, err := user.LookupGroup(group); err == nil {
+			return group, nil
+		}
+	}
+
+	return "", errors.New("group for sudo not found")
 }
 
 // GetHostID returns the ID from the os-release files
