@@ -17,11 +17,13 @@
 package utils
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 	"syscall"
 
 	"github.com/acobaugh/osrelease"
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -49,6 +51,47 @@ var (
 		"XDG_VTNR",
 	}
 )
+
+func ForwardToHost() (int, error) {
+	envOptions := GetEnvOptionsForPreservedVariables()
+	toolboxPath := os.Getenv("TOOLBOX_PATH")
+
+	var flatpakSpawnArgs []string
+
+	flatpakSpawnArgs = append(flatpakSpawnArgs, envOptions...)
+
+	flatpakSpawnArgs = append(flatpakSpawnArgs, []string{
+		"--host",
+		toolboxPath,
+	}...)
+
+	flatpakSpawnArgs = append(flatpakSpawnArgs, os.Args[1:]...)
+
+	logrus.Debug("Forwarding to host:")
+	logrus.Debug(flatpakSpawnArgs)
+
+	cmd := exec.Command("flatpak-spawn", flatpakSpawnArgs...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+
+	if logLevel := logrus.GetLevel(); logLevel >= logrus.DebugLevel {
+		cmd.Stderr = os.Stderr
+	}
+
+	if err := cmd.Run(); err != nil {
+		if errors.Is(err, exec.ErrNotFound) {
+			return 1, errors.New("flatpak-spawn(1) not found")
+		}
+
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			exitCode := exitErr.ExitCode()
+			return exitCode, nil
+		}
+	}
+
+	return 0, nil
+}
 
 func GetEnvOptionsForPreservedVariables() []string {
 	var envOptions []string
