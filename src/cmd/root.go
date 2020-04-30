@@ -122,7 +122,7 @@ func rootHelp(cmd *cobra.Command, args []string) {
 		fmt.Fprintf(os.Stderr, "enter     Enter an existing toolbox container\n")
 		fmt.Fprintf(os.Stderr, "list      List all existing toolbox containers and images\n")
 		fmt.Fprintf(os.Stderr, "\n")
-		fmt.Fprintf(os.Stderr, "Run 'toolbox --help' for usage.\n")
+		fmt.Fprintf(os.Stderr, "Run '%s --help' for usage.\n", executableBase)
 	} else {
 		for _, arg := range args {
 			if !strings.HasPrefix(arg, "-") {
@@ -152,7 +152,7 @@ func rootHelp(cmd *cobra.Command, args []string) {
 }
 
 func rootUsage(cmd *cobra.Command) error {
-	err := errors.New("Run 'toolbox --help' for usage.")
+	err := fmt.Errorf("Run '%s --help' for usage.", executableBase)
 	fmt.Fprintf(os.Stderr, "%s", err)
 	return err
 }

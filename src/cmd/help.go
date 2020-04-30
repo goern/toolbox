@@ -67,7 +67,7 @@ func helpShowManual(args []string) error {
 
 	if len(args) == 0 {
 		manual = "toolbox"
-	} else if args[0] == "toolbox" {
+	} else if args[0] == executableBase {
 		manual = "toolbox"
 	} else {
 		manual = "toolbox-" + args[0]
