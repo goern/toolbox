@@ -17,6 +17,12 @@
 package cmd
 
 import (
+	"errors"
+	"fmt"
+	"os"
+	"os/exec"
+	"syscall"
+
 	"github.com/containers/toolbox/pkg/utils"
 	"github.com/spf13/cobra"
 )
@@ -33,9 +39,33 @@ func init() {
 }
 
 func reset(cmd *cobra.Command, args []string) error {
+	fmt.Fprintf(os.Stderr, "'%s reset' is deprecated in favor of 'podman system reset'.\n", executableBase)
+
+	podmanBinary, err := exec.LookPath("podman")
+	if err != nil {
+		if errors.Is(err, exec.ErrNotFound) {
+			return errors.New("podman(1) not found")
+		}
+
+		return errors.New("failed to lookup podman(1)")
+	}
+
+	podmanArgs := []string{"podman", "system", "reset"}
+	if rootFlags.assumeYes {
+		podmanArgs = append(podmanArgs, []string{"--force"}...)
+	}
+
+	env := os.Environ()
+
+	if err := syscall.Exec(podmanBinary, podmanArgs, env); err != nil {
+		return errors.New("failed to invoke podman(1)")
+	}
+
 	return nil
 }
 
 func resetHelp(cmd *cobra.Command, args []string) {
-	utils.ShowManual("toolbox-reset")
+	if err := utils.ShowManual("toolbox-reset"); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+	}
 }
