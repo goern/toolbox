@@ -24,7 +24,7 @@ RUN rm /extra-packages
 
 RUN dnf clean all
 
-COPY Pipfile /
-RUN pipenv --python /usr/bin/python3.6 install
+COPY Pipfile.lock /
+RUN micropipenv install
 
 CMD /bin/sh

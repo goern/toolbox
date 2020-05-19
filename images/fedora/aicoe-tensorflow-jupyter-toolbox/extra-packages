@@ -38,4 +38,4 @@ words
 xz
 zip
 python36
-pipenv
+micropipenv
