@@ -1,18 +1,26 @@
 [[source]]
-url ="https://tensorflow.pypi.thoth-station.ninja/index/manylinux2010/AVX2/simple/"
+url = "https://tensorflow.pypi.thoth-station.ninja/index/manylinux2010/AVX2/simple/"
 verify_ssl = true
 name = "redhat-aicoe-experiments"
 
 [[source]]
-name = "pypi"
 url = "https://pypi.org/simple"
 verify_ssl = true
+name = "pypi"
 
-[dev-packages]
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi-org"
 
 [packages]
 jupyter = "*"
-tensorflow = {version="==2.0.1", index="redhat-aicoe-experiments"}
+
+[dev-packages]
 
 [requires]
 python_version = "3.6"
+
+[packages.tensorflow]
+index = "redhat-aicoe-experiments"
+version = "==2.0.1"
